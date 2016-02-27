@@ -9,8 +9,9 @@ public class Mouth extends FacialFeature {
     public static final PixelInfo SAG = new PixelInfo(2, 9, new int[][]{{0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0} , {1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1}, {1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1},{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1}});
     public static final PixelInfo SMILE = new PixelInfo(2, 9, new int[][]{{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1}, {1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1}, {1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}});
     public static final PixelInfo ROUND = new PixelInfo(6, 8, new int[][]{{1, 1, 1, 1},{1, 0, 0, 1},{1, 0, 0, 1},{1, 1, 1, 1}});
+    public static final PixelInfo GRIN = new PixelInfo(4, 8, new int[][]{{1, 1, 1, 1, 1, 1, 1, 1}, {1, 0, 0, 0, 0, 0, 0, 1}, {0, 1, 0, 0, 0, 0, 1, 0}, {0, 0, 1, 1, 1, 1, 0, 0}});
 
     public Mouth () {
-        setPixelInfo(FLAT);
+        setPixelInfo(GRIN);
     }
 }

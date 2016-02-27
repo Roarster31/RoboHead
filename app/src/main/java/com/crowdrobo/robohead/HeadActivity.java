@@ -19,7 +19,11 @@ import com.crowdrobo.robohead.face.emotion.NeutralEmotion;
 import com.crowdrobo.robohead.face.emotion.SurprisedEmotion;
 import com.crowdrobo.robohead.face.emotion.UnhappyEmotion;
 
+import org.apache.http.message.BasicNameValuePair;
+
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -32,6 +36,8 @@ public class HeadActivity extends AppCompatActivity {
      */
     private static final boolean AUTO_HIDE = true;
 
+    public static final int RECONNECT_DELAY = 10 * 1000;
+
     /**
      * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
      * user interaction before hiding the system UI.
@@ -43,6 +49,8 @@ public class HeadActivity extends AppCompatActivity {
      * and a change of the status and navigation bar.
      */
     private static final int UI_ANIMATION_DELAY = 300;
+    public static final String DEV_SERVER = "http://33ca8f47.ngrok.io";
+    public static final String PROD_SERVER = "http://7639d0fc.ngrok.io";
     private final Handler mHideHandler = new Handler();
     private View mFace;
     private final Runnable mHidePart2Runnable = new Runnable() {
@@ -71,6 +79,23 @@ public class HeadActivity extends AppCompatActivity {
     };
     private TextView mTextView;
 
+    private boolean mConnected;
+
+    Runnable connectRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!mConnected) {
+                client.connect();
+
+                handler.postDelayed(connectRunnable, RECONNECT_DELAY);
+            }
+        }
+    };
+    private WebSocketClient client;
+    private Handler handler;
+    private HeadController headController;
+    private SpeechCapture speechCapture;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,17 +114,52 @@ public class HeadActivity extends AppCompatActivity {
             }
         });
 
-        WebSocketClient client = new WebSocketClient(URI.create("http://33ca8f47.ngrok.io"), new WebSocketClient.Listener() {
+        List<BasicNameValuePair> extraHeaders = Arrays.asList(
+                new BasicNameValuePair("Cookie", "session=abcd")
+        );
 
+
+        handler = new Handler();
+        client = new WebSocketClient(URI.create(PROD_SERVER), new WebSocketClient.Listener() {
+
+            @Override
+            public void onConnect() {
+                mConnected = true;
+                headController.onConnect();
+                speechCapture.onConnect();
+            }
+
+            @Override
+            public void onMessage(String message) {
+                headController.onMessage(message);
+                speechCapture.onMessage(message);
+            }
+
+            @Override
+            public void onMessage(byte[] data) {
+                headController.onMessage(data);
+                speechCapture.onMessage(data);
+            }
+
+            @Override
+            public void onDisconnect(int code, String reason) {
+                mConnected = false;
+                handler.postDelayed(connectRunnable, RECONNECT_DELAY);
+                headController.onDisconnect(code, reason);
+                speechCapture.onDisconnect(code,reason);
+            }
+
+            @Override
+            public void onError(Exception error) {
+                headController.onError(error);
+                speechCapture.onError(error);
+            }
         }, extraHeaders);
 
-        HeadController headController = new HeadController((PixelMatrix) mFace);
-        SpeechCapture speechCapture = new SpeechCapture(this, new SpeechCapture.SpeechCallback() {
-            @Override
-            public void onTextRecognised(String text) {
-                mTextView.setText(text);
-            }
-        });
+        handler.post(connectRunnable);
+
+        headController = new HeadController(this, (PixelMatrix) mFace);
+        speechCapture = new SpeechCapture(client);
     }
 
     @Override

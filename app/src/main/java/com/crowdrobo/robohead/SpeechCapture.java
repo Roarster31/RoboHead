@@ -1,103 +1,90 @@
 package com.crowdrobo.robohead;
 
-import android.content.Context;
-import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.os.Bundle;
-import android.speech.RecognitionListener;
-import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
 import android.util.Log;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
+import com.crowdrobo.robohead.coms.WebSocketClient;
 
 /**
  * Created by rory on 30/01/16.
  */
-public class SpeechCapture {
+public class SpeechCapture implements WebSocketClient.Listener {
 
     private static final String TAG = "SpeechCapture";
+    private final WebSocketClient mClient;
 
-    public interface SpeechCallback {
-        void onTextRecognised(String text);
+    @Override
+    public void onConnect() {
+        if(!mConnected) {
+            mConnected = true;
+            new Thread(audioRunnable).start();
+        }
     }
 
-    public byte[] buffer;
-    public static DatagramSocket socket;
-    private int port=50005;
+    @Override
+    public void onMessage(String message) {
+
+    }
+
+    @Override
+    public void onMessage(byte[] data) {
+
+    }
+
+    @Override
+    public void onDisconnect(int code, String reason) {
+        mConnected = false;
+    }
+
+    @Override
+    public void onError(Exception error) {
+
+    }
 
     AudioRecord recorder;
 
-    private int sampleRate = 16000 ; // 44100 for music
+    private int sampleRate = 16000; // 44100 for music
     private int channelConfig = AudioFormat.CHANNEL_CONFIGURATION_MONO;
     private int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     int minBufSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
-    private boolean status = true;
+    private boolean mConnected = true;
 
-    public SpeechCapture (final Context context, final SpeechCallback callback) {
-        Thread streamThread = new Thread(new Runnable() {
+    public SpeechCapture(WebSocketClient client) {
+        mClient = client;
+    }
+
+    Runnable audioRunnable = new Runnable() {
 
         @Override
         public void run() {
-            try {
 
 
-                byte[] buffer = new byte[minBufSize];
+            byte[] buffer = new byte[minBufSize];
 
-                Log.d("VS","Buffer created of size " + minBufSize);
-                DatagramPacket packet;
+            Log.d("VS", "Buffer created of size " + minBufSize);
 
+            recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, channelConfig, audioFormat, minBufSize * 10);
+            Log.d("VS", "Recorder initialized");
 
-                recorder = new AudioRecord(MediaRecorder.AudioSource.MIC,sampleRate,channelConfig,audioFormat,minBufSize*10);
-                Log.d("VS", "Recorder initialized");
-
-                recorder.startRecording();
+            recorder.startRecording();
 
 
-                while(status == true) {
+            while (mConnected) {
 
+                //reading data from MIC into buffer
+                minBufSize = recorder.read(buffer, 0, buffer.length);
 
-                    //reading data from MIC into buffer
-                    minBufSize = recorder.read(buffer, 0, buffer.length);
+                mClient.send(buffer);
 
-                    //putting buffer in the packet
-                    packet = new DatagramPacket (buffer,buffer.length,destination,port);
-
-                    socket.send(packet);
-                    System.out.println("MinBufferSize: " +minBufSize);
-
-
-                }
-
-
-
-            } catch(UnknownHostException e) {
-                Log.e("VS", "UnknownHostException");
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e("VS", "IOException");
             }
+
+            recorder.stop();
+
+
         }
 
-    });
-    streamThread.start();
+    };
 
-    }
-
-    private void processMatches(ArrayList<String> voiceResults, SpeechCallback callback) {
-        String longest = null;
-        for (String match : voiceResults) {
-            if(longest == null || longest.length() < match.length()) {
-                longest = match;
-            }
-        }
-        callback.onTextRecognised(longest);
-    }
 }

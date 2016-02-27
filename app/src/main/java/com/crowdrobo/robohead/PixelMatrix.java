@@ -69,6 +69,7 @@ public class PixelMatrix extends View {
 
 //            mVertCellCount = mHorizCellCount = CELL_COUNT;
 
+
         mCellHeight = h / CELL_COUNT;
         mCellWidth = w / CELL_COUNT;
 
