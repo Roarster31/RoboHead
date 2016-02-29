@@ -49,7 +49,7 @@ public class HeadActivity extends AppCompatActivity {
      * and a change of the status and navigation bar.
      */
     private static final int UI_ANIMATION_DELAY = 300;
-    public static final String DEV_SERVER = "http://33ca8f47.ngrok.io";
+    public static final String DEV_SERVER = "http://10.1.53.195:3110";
     public static final String PROD_SERVER = "http://7639d0fc.ngrok.io";
     private final Handler mHideHandler = new Handler();
     private View mFace;
@@ -120,7 +120,7 @@ public class HeadActivity extends AppCompatActivity {
 
 
         handler = new Handler();
-        client = new WebSocketClient(URI.create(PROD_SERVER), new WebSocketClient.Listener() {
+        client = new WebSocketClient(URI.create(DEV_SERVER), new WebSocketClient.Listener() {
 
             @Override
             public void onConnect() {

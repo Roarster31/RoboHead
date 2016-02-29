@@ -52,7 +52,7 @@ public class HeadController implements WebSocketClient.Listener {
         @Override
         public void run() {
 
-//            if(mConnected) {
+            if(mConnected) {
                 if(blinking) {
                     blinking = false;
                     mFaceScreen.getLeftEye().setPixelInfo(Eye.LEFT_EYE_OPEN);
@@ -72,7 +72,7 @@ public class HeadController implements WebSocketClient.Listener {
                 });
 
                 handler.postDelayed(blinkRunnable, (long) (50 + Math.random()*700 + (blinking ? 0 : (BLINK_RUNNABLE_DELAY + Math.random() * BLINK_RUNNABLE_DELAY))));
-//            }
+            }
         }
     };
 

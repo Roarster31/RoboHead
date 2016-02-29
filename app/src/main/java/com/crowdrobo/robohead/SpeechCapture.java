@@ -49,7 +49,7 @@ public class SpeechCapture implements WebSocketClient.Listener {
     private int channelConfig = AudioFormat.CHANNEL_CONFIGURATION_MONO;
     private int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     int minBufSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
-    private boolean mConnected = true;
+    private boolean mConnected = false;
 
     public SpeechCapture(WebSocketClient client) {
         mClient = client;
