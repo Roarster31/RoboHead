@@ -1,18 +1,25 @@
 package com.crowdrobo.robohead;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 
 import com.crowdrobo.robohead.face.NoConnectionScreen;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Created by rory on 30/01/16.
  */
-public class PixelMatrix extends View {
+public class PixelMatrix extends View implements ValueAnimator.AnimatorUpdateListener{
     private static final int CELL_COUNT = 16;
     private static final int BACKGROUND_COLOUR = 0xFCBC00;
 
@@ -21,6 +28,15 @@ public class PixelMatrix extends View {
     private float mCellHeight;
     private float mCellWidth;
     private PixelInterface mPixelInterface;
+    private ValueAnimator mValueAnimator;
+
+    private int mNumCirclesToDraw = 0;
+    private int circleLimit = 35;
+    private int circleStart = 10;
+
+    private float limit[][] = new float[CELL_COUNT][CELL_COUNT];
+    private float radiuses[][] = new float[CELL_COUNT][CELL_COUNT];
+    private float directions[][] = new float[CELL_COUNT][CELL_COUNT];
 
     public PixelMatrix(Context context) {
         super(context);
@@ -47,6 +63,22 @@ public class PixelMatrix extends View {
         mPixelInterface = new NoConnectionScreen();
         mPixelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPixelPaint.setStyle(Paint.Style.FILL);
+
+        for (int i = 0; i < CELL_COUNT; i++) {
+            for (int j = 0; j < CELL_COUNT; j++) {
+                Random rand = new Random();
+                float radius = rand.nextInt(circleLimit) + circleStart;
+                radiuses[i][j] = radius;
+                limit[i][j] = radius;
+            }
+        }
+
+        mValueAnimator = ValueAnimator.ofInt(0, CELL_COUNT * CELL_COUNT);
+        mValueAnimator.setDuration(6000);
+        mValueAnimator.setInterpolator(new LinearInterpolator());
+        mValueAnimator.addUpdateListener(this);
+        mValueAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        mValueAnimator.start();
     }
 
     @Override
@@ -78,15 +110,47 @@ public class PixelMatrix extends View {
     }
 
     @Override
+    public void onAnimationUpdate(ValueAnimator animation) {
+        int val = (Integer) animation.getAnimatedValue();
+        if (val != mNumCirclesToDraw) {
+            mNumCirclesToDraw = val;
+            for (int i = 0; i < CELL_COUNT; i++) {
+                for (int j = 0; j < CELL_COUNT; j++) {
+                    if (radiuses[i][j] == 0) {
+                        directions[i][j] = 1;
+                    } else if (radiuses[i][j] == limit[i][j]) {
+                        directions[i][j] = 0;
+                        Random rand = new Random();
+                        float newLimit = rand.nextInt(circleLimit) + circleStart;
+                        limit[i][j] = newLimit;
+                    }
+
+
+                    if (directions[i][j] == 0) {
+                        radiuses[i][j] = radiuses[i][j] - 1;
+                    } else {
+                        radiuses[i][j] = radiuses[i][j] + 1;
+                    }
+
+                }
+            }
+            invalidate();
+        }
+    }
+
+    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
         int cellColour;
         for (int i = 0; i < CELL_COUNT; i++) {
             for (int j = 0; j < CELL_COUNT; j++) {
-                cellColour = mPixelInterface.shouldDrawPixel(i, j) ? Color.BLACK : BACKGROUND_COLOUR;
+                cellColour = mPixelInterface.shouldDrawPixel(i, j) ? Color.WHITE : Color.rgb(179, 38, 193);
                 mPixelPaint.setColor(cellColour);
-                canvas.drawRect(i * mCellWidth + mCellPadding,j * mCellHeight + mCellPadding,(i + 1) * mCellWidth - mCellPadding,(j + 1) * mCellHeight - mCellPadding,mPixelPaint);
+
+                float radius = radiuses[i][j];
+
+                canvas.drawCircle(i * mCellWidth + mCellPadding - (radius / 2),j * mCellHeight + mCellPadding - (radius / 2), radius, mPixelPaint);
             }
         }
 
